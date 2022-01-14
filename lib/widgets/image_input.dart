@@ -1,17 +1,46 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart' as syspath;
+import 'package:path/path.dart' as path;
 
 class ImageInput extends StatefulWidget {
+  final Function onSelectImage;
+
+  ImageInput({required this.onSelectImage});
+
   @override
   _ImageInputState createState() => _ImageInputState();
 }
 
 class _ImageInputState extends State<ImageInput> {
+  File? _storedImage;
+
+  _takePicture() async {
+    final ImagePicker _picker = ImagePicker();
+    XFile file = await _picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 600,
+    ) as XFile;
+
+    setState(() {
+      _storedImage = File(file.path);
+    });
+
+    final appDir = await syspath.getApplicationDocumentsDirectory();
+    String fileName = path.basename(_storedImage?.path ?? '');
+    final savedImage = await _storedImage?.copy('${appDir.path}/$fileName');
+
+    widget.onSelectImage(savedImage);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
         Container(
-          width: 100,
+          width: 160,
           height: 100,
           decoration: BoxDecoration(
             border: Border.all(
@@ -20,14 +49,20 @@ class _ImageInputState extends State<ImageInput> {
             ),
           ),
           alignment: Alignment.center,
-          child: Text('Nenhuma imagem!'),
+          child: _storedImage != null
+              ? Image.file(
+                  _storedImage!,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                )
+              : Text('Nenhuma imagem'),
         ),
         SizedBox(
           width: 10,
         ),
         Expanded(
           child: TextButton.icon(
-            onPressed: () {},
+            onPressed: _takePicture,
             icon: Icon(Icons.camera),
             label: Text('Tirar Foto'),
           ),
