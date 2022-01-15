@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:great_places_app/models/places.dart';
+import 'package:great_places_app/utils/db_util.dart';
 
 class GreatPlaces with ChangeNotifier {
   List<Place> _items = [];
@@ -19,7 +20,21 @@ class GreatPlaces with ChangeNotifier {
     return _items[index];
   }
 
-  void addPlace(String title, File image) {
+  Future<void> loadPlaces() async {
+    final dataList = await DbUtil.getData('places');
+    _items = dataList
+        .map(
+          (item) => Place(
+              id: item['id'],
+              title: item['title'],
+              img: File(item['image']),
+              location: null),
+        )
+        .toList();
+    notifyListeners();
+  }
+
+  Future<void> addPlace(String title, File image) async {
     final newPlace = Place(
       id: Random().nextDouble().toString(),
       img: image,
@@ -27,6 +42,12 @@ class GreatPlaces with ChangeNotifier {
     );
 
     _items.add(newPlace);
+
+    await DbUtil.insert('places', {
+      'id': newPlace.id,
+      'title': newPlace.title,
+      'image': newPlace.img.path,
+    });
 
     notifyListeners();
   }
